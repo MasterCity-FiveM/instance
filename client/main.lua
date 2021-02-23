@@ -25,6 +25,18 @@ end
 
 function EnterInstance(instance)
 	insideInstance = true
+	
+	Citizen.CreateThread(function()
+		while insideInstance do
+			Citizen.Wait(0) -- must be run every frame
+			SetVehicleDensityMultiplierThisFrame(0.0)
+			SetParkedVehicleDensityMultiplierThisFrame(0.0)
+
+			local pos = GetEntityCoords(PlayerPedId())
+			RemoveVehiclesFromGeneratorsInArea(pos.x - 900.0, pos.y - 900.0, pos.z - 900.0, pos.x + 900.0, pos.y + 900.0, pos.z + 900.0)
+		end
+	end)
+	
 	TriggerServerEvent('instance:enter', instance.host)
 
 	if registeredInstanceTypes[instance.type].enter then
@@ -35,7 +47,7 @@ end
 function LeaveInstance()
 	if instance.host then
 		if #instance.players > 1 then
-			ESX.ShowNotification(_U('left_instance'))
+			exports.pNotify:SendNotification({text = _U('left_instance'), type = "info", timeout = 4000})
 		end
 
 		if registeredInstanceTypes[instance.type].exit then
@@ -116,8 +128,7 @@ RegisterNetEvent('instance:onPlayerEntered')
 AddEventHandler('instance:onPlayerEntered', function(_instance, player)
 	instance = _instance
 	local playerName = GetPlayerName(GetPlayerFromServerId(player))
-
-	ESX.ShowNotification(_('entered_into', playerName))
+	exports.pNotify:SendNotification({text = _('entered_into', playerName), type = "info", timeout = 4000})
 end)
 
 RegisterNetEvent('instance:onPlayerLeft')
@@ -125,7 +136,7 @@ AddEventHandler('instance:onPlayerLeft', function(_instance, player)
 	instance = _instance
 	local playerName = GetPlayerName(GetPlayerFromServerId(player))
 
-	ESX.ShowNotification(_('left_out', playerName))
+	exports.pNotify:SendNotification({text = _('left_out', playerName), type = "info", timeout = 4000})
 end)
 
 RegisterNetEvent('instance:onInvite')
@@ -135,12 +146,14 @@ AddEventHandler('instance:onInvite', function(_instance, type, data)
 		host = _instance,
 		data = data
 	}
-
+	
+	exports.pNotify:SendNotification({text = _U('press_to_enter'), type = "info", timeout = 9000})
+			
 	Citizen.CreateThread(function()
 		Citizen.Wait(10000)
 
 		if instanceInvite then
-			ESX.ShowNotification(_U('invite_expired'))
+			exports.pNotify:SendNotification({text = _U('invite_expired'), type = "info", timeout = 4000})
 			instanceInvite = nil
 		end
 	end)
@@ -148,22 +161,13 @@ end)
 
 RegisterInstanceType('default')
 
--- Controls for invite
-Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(0)
 
-		if instanceInvite then
-			ESX.ShowHelpNotification(_U('press_to_enter'))
-
-			if IsControlJustReleased(0, 38) then
-				EnterInstance(instanceInvite)
-				ESX.ShowNotification(_U('entered_instance'))
-				instanceInvite = nil
-			end
-		else
-			Citizen.Wait(500)
-		end
+RegisterNetEvent('master_keymap:e')
+AddEventHandler('master_keymap:e', function()
+	if instanceInvite then
+		EnterInstance(instanceInvite)
+		exports.pNotify:SendNotification({text = _U('entered_instance'), type = "info", timeout = 4000})
+		instanceInvite = nil
 	end
 end)
 
@@ -211,21 +215,4 @@ end)
 
 Citizen.CreateThread(function()
 	TriggerEvent('instance:loaded')
-end)
-
--- Fix vehicles randomly spawning nearby the player inside an instance
-Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(0) -- must be run every frame
-
-		if insideInstance then
-			SetVehicleDensityMultiplierThisFrame(0.0)
-			SetParkedVehicleDensityMultiplierThisFrame(0.0)
-
-			local pos = GetEntityCoords(PlayerPedId())
-			RemoveVehiclesFromGeneratorsInArea(pos.x - 900.0, pos.y - 900.0, pos.z - 900.0, pos.x + 900.0, pos.y + 900.0, pos.z + 900.0)
-		else
-			Citizen.Wait(500)
-		end
-	end
 end)
