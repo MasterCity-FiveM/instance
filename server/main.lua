@@ -1,3 +1,6 @@
+ESX = nil
+
+TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 local instances = {}
 
 function GetInstancedPlayers()
@@ -107,25 +110,30 @@ end
 
 RegisterServerEvent('instance:create')
 AddEventHandler('instance:create', function(type, data)
+	ESX.RunCustomFunction("anti_ddos", source, 'instance:create', {type = type, data = data})
 	CreateInstance(type, source, data)
 end)
 
 RegisterServerEvent('instance:close')
 AddEventHandler('instance:close', function()
+	ESX.RunCustomFunction("anti_ddos", source, 'instance:close', {})
 	CloseInstance(source)
 end)
 
 RegisterServerEvent('instance:enter')
 AddEventHandler('instance:enter', function(instance)
+	ESX.RunCustomFunction("anti_ddos", source, 'instance:enter', {instance = instance})
 	AddPlayerToInstance(instance, source)
 end)
 
 RegisterServerEvent('instance:leave')
 AddEventHandler('instance:leave', function(instance)
+	ESX.RunCustomFunction("anti_ddos", source, 'instance:leave', {instnace = instance})
 	RemovePlayerFromInstance(instance, source)
 end)
 
 RegisterServerEvent('instance:invite')
 AddEventHandler('instance:invite', function(instance, type, player, data)
+	ESX.RunCustomFunction("anti_ddos", source, 'instance:invite', {instance = instance, type = type, player = player, data = data})
 	InvitePlayerToInstance(instance, type, player, data)
 end)
